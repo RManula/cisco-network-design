@@ -1,135 +1,128 @@
-# Cisco Network Infrastructure Design and Protocol Analysis
+# Network Design Lab: OSPF, VLANs, and Protocol Analysis
 
-Four networking modules built in Cisco Packet Tracer and Wireshark. Covers protocol analysis, multi-subnet routing with OSPF, VLAN segmentation with Router-on-a-Stick, and OSI Layer 2/3 address behavior across hops.
+Built a small enterprise network from scratch in Cisco Packet Tracer, starting with a basic 3-subnet routed topology and building it up through OSPF dynamic routing, DHCP, VLAN segmentation, and a wireless segment. Also analyzed an SMTP packet capture in Wireshark and traced how Layer 2 and Layer 3 addresses behave across router hops.
+
+The full topology runs 12 PCs (PC-A through PC-L) across 3 subnets, 5 switches, and 3 routers connected in a triangle via serial links.
 
 ---
 
 ## Modules
 
-| Module | Topic |
-|--------|-------|
-| [1 - SMTP Analysis](task-1-smtp-analysis/) | Wireshark capture of a full SMTP email session |
-| [2 - Network Design](task-2-network-design/) | Three-subnet routed network with OSPF and DHCP |
-| [3 - VLAN Implementation](task-3-vlan/) | VLAN segmentation and inter-VLAN routing |
-| [4 - Address Analysis](task-4-address-analysis/) | How MAC and IP addresses behave across router hops |
+| | Module | What it covers |
+|-|--------|---------------|
+| 1 | [SMTP Analysis](task-1-smtp-analysis/) | Wireshark capture of a full SMTP session, TCP handshake to session close |
+| 2 | [Network Design](task-2-network-design/) | 3-subnet routed network, OSPF, DHCP, failover testing |
+| 3 | [VLAN Implementation](task-3-vlan/) | VLAN segmentation, Router-on-a-Stick, wireless on a dedicated VLAN |
+| 4 | [L2/L3 Address Analysis](task-4-address-analysis/) | How MAC and IP addresses change at each router hop |
 
 ---
 
-## Module 1 - SMTP Protocol Analysis
+## Module 2 - Network Design
 
-Analysis of a Wireshark capture (`mail_sender_attachment.pcapng`) showing a complete SMTP session, from the TCP handshake through to session teardown. The email includes an attachment sent as Base64 in the DATA payload.
-
-The session runs without TLS so the full content, sender, recipient, and attachment are all visible in plain text. Good for understanding exactly what SMTP looks like on the wire before encryption is added.
-
-Files: [task-1-smtp-analysis/](task-1-smtp-analysis/)
-
----
-
-## Module 2 - Multi-Subnet Network Design
-
-Three-subnet routed network with a router per subnet, serial interconnects between routers, OSPF for dynamic routing, and DHCP on each router for automatic IP allocation.
+Three subnets, one router each, connected over serial links with OSPF handling all routing automatically.
 
 ### Topology
 
 ![Network Topology](task-2-network-design/screenshots/topology.png)
 
-### Addressing
+The network has 3 routers (R-A, R-B, R-C) forming a triangle in the center. Each router owns one subnet and connects to the other two via serial links. Subnet A is the largest with 6 PCs and 3 switches. Subnets B and C each have 3 PCs and a switch.
 
-| Subnet | Network | Gateway |
-|--------|---------|---------|
-| Subnet A | 192.168.10.0/24 | 192.168.10.1 (Router A) |
-| Subnet B | 192.168.20.0/24 | 192.168.20.1 (Router B) |
-| Subnet C | 192.168.30.0/24 | 192.168.30.1 (Router C) |
+### Subnets
 
-### Router Serial Links
+| Subnet | Network | PCs | Gateway |
+|--------|---------|-----|---------|
+| Subnet A | 192.168.10.0/24 | PC-A, B, C, D, E, F | 192.168.10.1 (R-A, Fa0/0) |
+| Subnet B | 192.168.20.0/24 | PC-G, H, I | 192.168.20.1 (R-B, Fa0/0) |
+| Subnet C | 192.168.30.0/24 | PC-J, K, L | 192.168.30.1 (R-C, Fa0/0) |
 
-| Link | Router A | Remote | Network |
-|------|----------|--------|---------|
-| A to B | Se2/0 - 10.0.0.1 | Se2/0 - 10.0.0.2 | 10.0.0.0/24 |
-| A to C | Se3/0 - 10.0.2.1 | Se3/0 - 10.0.2.2 | 10.0.2.0/24 |
+### Router Serial Interconnects
 
-OSPF is used instead of static routing so the network recovers automatically from link failures. Tested by disabling the A-B serial link, OSPF rerouted traffic through Router C with no manual changes.
+| Link | Interface | IP | Network |
+|------|-----------|----|---------|
+| R-A to R-B | Se2/0 | 10.0.0.1 / 10.0.0.2 | 10.0.0.0/24 |
+| R-A to R-C | Se3/0 | 10.0.2.1 / 10.0.2.2 | 10.0.2.0/24 |
 
-Files: [task-2-network-design/](task-2-network-design/)
+OSPF runs on all three routers in area 0. Each router advertises its connected networks and learns the others dynamically, no static routes anywhere. DHCP is configured on each router to serve its own subnet, so all 12 PCs get their IP, mask, gateway, and DNS automatically.
+
+Tested failover by disabling the R-A to R-B serial link. OSPF rerouted traffic through R-C automatically within seconds, no config changes needed.
 
 ---
 
 ## Module 3 - VLAN Implementation
 
-Extends the Module 2 topology with three VLANs and a Router-on-a-Stick setup. The original /24 was subnetted to give each VLAN its own address range.
+Same physical topology as Module 2, but with three VLANs overlaid and inter-VLAN routing handled by a single Router-on-a-Stick configuration on R-A.
 
 ### Topology
 
 ![VLAN Topology](task-3-vlan/screenshots/topology.png)
 
-### Subnetting
+### VLAN Design
+
+The original /24 address space was subnetted into three ranges, one per VLAN:
 
 ```
 192.168.1.0/24
-  192.168.1.0/25    VLAN 225 (Wi-Fi laptops)
+  192.168.1.0/25      VLAN 225  (Wi-Fi)       128 hosts
   192.168.1.128/25
-    192.168.1.128/26  VLAN 75  (PC-A, PC-D, PC-F)
-    192.168.1.192/26  VLAN 150 (remaining PCs)
+    192.168.1.128/26  VLAN 75   (Group A)      62 hosts
+    192.168.1.192/26  VLAN 150  (Group B)      62 hosts
 ```
 
-### VLAN Table
-
-| VLAN | ID | Subnet | Sub-interface | Devices |
+| VLAN | ID | Subnet | Sub-interface | Members |
 |------|----|--------|---------------|---------|
-| VLAN 75 | 75 | 192.168.1.128/26 | Fa0/0.75 | PC-A, PC-D, PC-F |
-| VLAN 150 | 150 | 192.168.1.192/26 | Fa0/0.150 | Remaining PCs |
-| VLAN 225 | 225 | 192.168.1.0/25 | Fa0/0.225 | Laptops via AP |
+| VLAN 75 | 75 | 192.168.1.128/26 | Fa0/0.75, gateway .129 | PC-A, PC-D, PC-F |
+| VLAN 150 | 150 | 192.168.1.192/26 | Fa0/0.150, gateway .193 | PC-B, C, E, G, H, I, J, K, L |
+| VLAN 225 | 225 | 192.168.1.0/25 | Fa0/0.225, gateway .1 | Laptops via AP |
 
-Router A handles inter-VLAN routing on a single physical interface using 802.1Q sub-interfaces. The access point is on VLAN 225 with WPA-PSK, SSID `VLAN 225 Wi-Fi`.
+R-A handles all inter-VLAN routing on a single physical port using 802.1Q sub-interfaces. Switches use trunk ports toward R-A and access ports for end devices. The wireless AP sits on SW-C with SSID `VLAN 225 Wi-Fi` and WPA-PSK, laptops connect wirelessly and get DHCP addresses from the VLAN 225 pool.
 
-Files: [task-3-vlan/](task-3-vlan/)
+Tested intra-VLAN pings (PC-A to PC-D), inter-VLAN pings (PC-A to VLAN 150 and 225), and interface disable/enable to confirm isolation and recovery.
 
 ---
 
-## Module 4 - Layer 2/3 Address Analysis
+## Module 1 - SMTP Analysis
 
-Traces a ping from PC-A (`192.168.10.3`) to PC-L (`192.168.30.3`) through the network and records how MAC addresses change at each router while IP addresses stay constant end-to-end.
+Analyzed a Wireshark capture (`mail_sender_attachment.pcapng`) of a complete SMTP session. The session runs without TLS so the entire exchange is visible in plain text, including the full command sequence, message headers, body, and a Base64-encoded attachment. Good for seeing exactly what SMTP looks like on the wire.
 
-| Device | Interface | Direction | Source IP | Dest IP | Source MAC | Dest MAC |
-|--------|-----------|-----------|-----------|---------|------------|----------|
-| PC-A | Fa0 | out | 192.168.10.3 | 192.168.30.3 | 0030.F28D.A517 | 000A.F3C5.7D08 |
-| Router A | Fa0/1 | in | 192.168.10.3 | 192.168.30.3 | 0030.F28D.A517 | 000A.F3C5.7D08 |
-| Router A | Se3/0 | out | 192.168.10.3 | 192.168.30.3 | 000A.F3C5.7D08 | 0002.175A.D5C8 |
-| Router C | Se2/0 | in | 192.168.10.3 | 192.168.30.3 | 000A.F3C5.7D08 | 0002.175A.D5C8 |
-| Router C | Fa0/1 | out | 192.168.10.3 | 192.168.30.3 | 0002.175A.D5C8 | 0002.4469.D303 |
-| PC-L | Fa0 | in | 192.168.10.3 | 192.168.30.3 | 0002.175A.D5C8 | 0002.4469.D303 |
+Details in [task-1-smtp-analysis/](task-1-smtp-analysis/).
 
-Files: [task-4-address-analysis/](task-4-address-analysis/)
+---
+
+## Module 4 - L2/L3 Address Analysis
+
+Traced a ping from PC-A to PC-L using Packet Tracer simulation mode and recorded the MAC and IP addresses at every interface along the path. IP stays the same end to end. MAC gets rewritten at each router because each segment only needs to know the two devices on that link.
+
+Full hop-by-hop table and explanation in [task-4-address-analysis/](task-4-address-analysis/).
 
 ---
 
 ## Repo Structure
 
 ```
-README.md
-Report.docx
 task-1-smtp-analysis/
   mail_sender_attachment.pcapng
 task-2-network-design/
-  topology.pkt
-  ip-addressing.xlsx
+  topology.pkt            open in Cisco Packet Tracer
+  ip-addressing.xlsx      IP planning spreadsheet
   screenshots/
   configs/
-    Router-A.txt, Router-B.txt, Router-C.txt
+    Router-A.txt          OSPF + DHCP config
+    Router-B.txt
+    Router-C.txt
     switches/Switch-A..E.txt
 task-3-vlan/
   topology.pkt
   ip-addressing.xlsx
   screenshots/
   configs/
-    Router-A.txt, SW-A.txt, SW-B.txt, SW-C.txt
+    Router-A.txt          Router-on-a-Stick config with all sub-interfaces
+    SW-A.txt, SW-B.txt, SW-C.txt
 task-4-address-analysis/
   README.md
 ```
 
 ## Tools
 
-Cisco Packet Tracer, Wireshark, OSPF, DHCP, IEEE 802.1Q
+Cisco Packet Tracer, Wireshark
 
-Open `.pkt` files with [Cisco Packet Tracer](https://www.netacad.com/courses/packet-tracer) (free NetAcad account required).  
-Open `.pcapng` with [Wireshark](https://www.wireshark.org/).
+`.pkt` files need [Cisco Packet Tracer](https://www.netacad.com/courses/packet-tracer), free with a NetAcad account. `.pcapng` opens in [Wireshark](https://www.wireshark.org/).

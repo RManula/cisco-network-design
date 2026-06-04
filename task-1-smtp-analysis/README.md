@@ -1,56 +1,67 @@
-# Task 1 - SMTP Protocol Analysis
+# SMTP Protocol Analysis
 
-Wireshark capture analysis of a complete SMTP email session with a file attachment. Walks through every stage from the TCP handshake to session close.
+Analyzed a Wireshark packet capture of a complete SMTP session where a client connects to a mail server, authenticates, sends a message with an attachment, and closes the connection. The session runs without TLS so everything is visible in plain text.
 
-## Capture File
+Open `mail_sender_attachment.pcapng` in Wireshark. Right-click any SMTP packet, choose Follow, then TCP Stream to see the full exchange in one view.
 
-`mail_sender_attachment.pcapng` - open in Wireshark and follow the TCP stream to see the full exchange.
+---
 
-## What SMTP Looks Like on the Wire
+## How the Session Works
 
-SMTP is a push protocol. The client pushes the message outward to the server, step by step, using a command-response pattern. It runs on port 25 (server to server) or port 587 (client to server).
+### 1. TCP Handshake
 
-### TCP Handshake
-
-Before any mail is sent, TCP sets up the connection:
+Before any SMTP commands, TCP establishes the connection:
 
 ```
-Client  ->  Server   SYN
-Server  ->  Client   SYN-ACK
-Client  ->  Server   ACK
+Client  ->  Server    SYN
+Server  ->  Client    SYN-ACK
+Client  ->  Server    ACK
 ```
 
-### SMTP Command Sequence
+Three packets, then the connection is up and SMTP starts.
+
+### 2. SMTP Command Sequence
 
 | Step | Command / Response | What it does |
 |------|--------------------|--------------|
-| 1 | 220 | Server ready greeting |
-| 2 | EHLO | Client identifies itself, requests ESMTP extensions |
-| 3 | 250 (multi-line) | Server lists supported capabilities |
-| 4 | MAIL FROM | Sender address declared |
-| 5 | RCPT TO | Recipient address declared |
-| 6 | DATA | Start of message content |
+| 1 | 220 | Server ready, sends greeting |
+| 2 | EHLO | Client identifies itself, asks for supported extensions |
+| 3 | 250 (multi-line) | Server lists capabilities: SIZE, PIPELINING, etc. |
+| 4 | MAIL FROM | Declares the sender address |
+| 5 | RCPT TO | Declares the recipient address |
+| 6 | DATA | Client signals it's about to send the message |
 | 7 | 354 | Server says go ahead |
-| 8 | headers + body | Full message including headers, then body, then a single `.` to end |
-| 9 | 250 | Server confirms message received |
-| 10 | QUIT | Client closes session |
-| 11 | 221 | Server acknowledges, closes connection |
+| 8 | message content | Headers (From, To, Subject, Date), then body, then a lone `.` on its own line to signal end |
+| 9 | 250 | Server confirms message accepted |
+| 10 | QUIT | Client closes the session |
+| 11 | 221 | Server acknowledges, connection closes |
 
-### Attachment
+### 3. Message and Attachment
 
-The attachment is embedded in the DATA section as Base64. Since there is no TLS on this session it shows up in the capture as plain text. You can copy the Base64 block and decode it manually to get the original file back.
+Once DATA starts, the client sends the full message. Headers come first, then the body, then the attachment encoded as Base64. Since there is no encryption, all of this is readable directly in the capture. To get the original attachment back, copy the Base64 block from the stream and decode it.
 
-To follow the stream in Wireshark: right-click any SMTP packet, Follow, TCP Stream.
-
-### Session Close
+### 4. Session Close
 
 ```
-Client  ->  Server   QUIT
-Server  ->  Client   221 Bye
-Client  ->  Server   FIN
-Server  ->  Client   FIN-ACK
+Client  ->  Server    QUIT
+Server  ->  Client    221 Bye
+Client  ->  Server    FIN
+Server  ->  Client    FIN-ACK
+Client  ->  Server    ACK
 ```
 
-## Security Note
+Clean four-way TCP close after the SMTP session ends.
 
-This session has no encryption. The sender address, recipient, subject, message body, and attachment are all readable in the capture. In any real environment you would add STARTTLS or use port 465 with SMTPS to wrap the session in TLS before any of that data moves.
+---
+
+## What SMTP Is
+
+SMTP (Simple Mail Transfer Protocol) is the standard protocol for sending email between servers and from clients to servers. It is a push protocol, meaning the sender pushes the message outward. Receiving email uses different protocols (IMAP or POP3).
+
+It runs on port 25 for server-to-server relay and port 587 for client submission. The commands have not changed much since RFC 821 in 1982. The EHLO extension (RFC 5321) added capability negotiation, but the basic flow is the same.
+
+---
+
+## Security
+
+This session has no encryption. The sender, recipient, subject, body, and attachment are all transmitted as plain text and fully readable in the capture. In a real environment you would use STARTTLS to upgrade the connection before any sensitive data is sent, or SMTPS on port 465 which wraps the entire session in TLS from the start.
