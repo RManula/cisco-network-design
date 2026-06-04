@@ -1,0 +1,63 @@
+Router#show ip interface brief
+Interface              IP-Address      OK? Method Status                Protocol 
+FastEthernet0/0        192.168.10.1    YES NVRAM  up                    up 
+FastEthernet0/0.75     192.168.1.129   YES manual up                    up 
+FastEthernet0/0.150    192.168.1.193   YES manual up                    up 
+FastEthernet0/0.225    192.168.1.1     YES manual up                    up 
+FastEthernet1/0        unassigned      YES NVRAM  administratively down down 
+Serial2/0              10.0.0.1        YES NVRAM  up                    up 
+Serial3/0              10.0.2.1        YES NVRAM  up                    up 
+FastEthernet4/0        unassigned      YES NVRAM  administratively down down 
+FastEthernet5/0        unassigned      YES NVRAM  administratively down down
+Router#show running-config interface FastEthernet0/0
+                           ^
+% Invalid input detected at '^' marker.
+	
+Router#show running-config interface FastEthernet0/0.75
+                           ^
+% Invalid input detected at '^' marker.
+	
+Router#show running-config interface FastEthernet0/0.150
+                           ^
+% Invalid input detected at '^' marker.
+	
+Router#show running-config interface FastEthernet0/0.225
+                           ^
+% Invalid input detected at '^' marker.
+	
+Router#show access-lists
+Extended IP access list VLAN75
+    10 permit ip 192.168.1.128 0.0.0.63 192.168.1.128 0.0.0.63
+    20 deny ip any any
+Extended IP access list VLAN150
+    10 permit ip 192.168.1.192 0.0.0.63 192.168.1.192 0.0.0.63
+    20 deny ip any any
+
+Router#show interfaces trunk
+                        ^
+% Invalid input detected at '^' marker.
+	
+Router#show running-config
+Building configuration...
+
+Current configuration : 2239 bytes
+!
+version 12.2
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname Router
+!
+!
+!
+!
+ip dhcp excluded-address 192.168.1.1 192.168.1.10
+ip dhcp excluded-address 192.168.1.129 192.168.1.139
+ip dhcp excluded-address 192.168.1.193 192.168.1.200
+!
+ip dhcp pool blue
+ip dhcp pool SubnetA
+ network 192.168.10.0 255.255.255.0
+ default-router 192.168.10.1
+ --More-- 

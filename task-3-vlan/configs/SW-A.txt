@@ -1,0 +1,73 @@
+Switch>enable
+Switch#show vlan brief
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Fa4/1, Fa5/1
+75   VLAN_75                          active    Fa1/1
+150  VLAN_150                         active    Fa2/1, Fa3/1
+1002 fddi-default                     active    
+1003 token-ring-default               active    
+1004 fddinet-default                  active    
+1005 trnet-default                    active    
+Switch#show ip interface brief
+Interface              IP-Address      OK? Method Status                Protocol 
+FastEthernet0/1        unassigned      YES manual up                    up 
+FastEthernet1/1        unassigned      YES manual up                    up 
+FastEthernet2/1        unassigned      YES manual up                    up 
+FastEthernet3/1        unassigned      YES manual up                    up 
+FastEthernet4/1        unassigned      YES manual down                  down 
+FastEthernet5/1        unassigned      YES manual down                  down 
+Vlan1                  unassigned      YES manual administratively down down
+Switch#show running-config interface FastEthernet0/0
+                           ^
+% Invalid input detected at '^' marker.
+	
+Switch#show running-config interface FastEthernet0/0.75
+                           ^
+% Invalid input detected at '^' marker.
+	
+Switch#show running-config interface FastEthernet0/0.150
+                           ^
+% Invalid input detected at '^' marker.
+	
+Switch#show access-lists
+Switch#
+Switch#show interfaces trunk
+Port        Mode         Encapsulation  Status        Native vlan
+Fa0/1       on           802.1q         trunking      1
+
+Port        Vlans allowed on trunk
+Fa0/1       1-1005
+
+Port        Vlans allowed and active in management domain
+Fa0/1       1,75,150
+
+Port        Vlans in spanning tree forwarding state and not pruned
+Fa0/1       1,75,150
+
+Switch#show running-config
+Building configuration...
+
+Current configuration : 677 bytes
+!
+version 12.1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname Switch
+!
+!
+!
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
+interface FastEthernet0/1
+ switchport mode trunk
+!
+
+Switch#

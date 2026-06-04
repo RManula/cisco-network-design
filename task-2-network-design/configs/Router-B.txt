@@ -1,0 +1,103 @@
+Router>enable
+Router#show running-config
+Building configuration...
+
+Current configuration : 1065 bytes
+!
+version 12.2
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname Router
+!
+!
+!
+!
+!
+ip dhcp pool SubnetB
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ dns-server 192.168.20.1
+!
+!
+!
+ip cef
+
+Router#show ip route
+Codes: C - connected, S - static, I - IGRP, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2, E - EGP
+       i - IS-IS, L1 - IS-IS level-1, L2 - IS-IS level-2, ia - IS-IS inter area
+       * - candidate default, U - per-user static route, o - ODR
+       P - periodic downloaded static route
+
+Gateway of last resort is not set
+
+     10.0.0.0/24 is subnetted, 3 subnets
+C       10.0.0.0 is directly connected, Serial3/0
+O       10.0.2.0 [110/128] via 10.0.3.2, 00:13:58, Serial2/0
+                 [110/128] via 10.0.0.1, 00:13:58, Serial3/0
+C       10.0.3.0 is directly connected, Serial2/0
+O    192.168.10.0/24 [110/65] via 10.0.0.1, 00:13:58, Serial3/0
+C    192.168.20.0/24 is directly connected, FastEthernet0/0
+O    192.168.30.0/24 [110/65] via 10.0.3.2, 00:13:58, Serial2/0
+
+Router#show ip dhcp binding
+IP address       Client-ID/              Lease expiration        Type
+                 Hardware address
+192.168.20.2     0090.2137.D29A           --                     Automatic
+192.168.20.3     0001.9642.D5AE           --                     Automatic
+192.168.20.4     0060.47AA.2B91           --                     Automatic
+Router#show ip dhcp pool
+
+Pool SubnetB :
+ Utilization mark (high/low)    : 100 / 0
+ Subnet size (first/next)       : 0 / 0 
+ Total addresses                : 254
+ Leased addresses               : 3
+ Excluded addresses             : 0
+ Pending event                  : none
+
+ 1 subnet is currently in the pool
+ Current index        IP address range                    Leased/Excluded/Total
+ 192.168.20.1         192.168.20.1     - 192.168.20.254    3    / 0     / 254
+Router#show ip interface brief
+Interface              IP-Address      OK? Method Status                Protocol 
+FastEthernet0/0        192.168.20.1    YES NVRAM  up                    up 
+FastEthernet1/0        unassigned      YES NVRAM  administratively down down 
+Serial2/0              10.0.3.1        YES NVRAM  up                    up 
+Serial3/0              10.0.0.2        YES NVRAM  up                    up 
+FastEthernet4/0        unassigned      YES NVRAM  administratively down down 
+FastEthernet5/0        unassigned      YES NVRAM  administratively down down
+Router#show ip ospf neighbor
+
+
+Neighbor ID     Pri   State           Dead Time   Address         Interface
+192.168.30.1      0   FULL/  -        00:00:37    10.0.3.2        Serial2/0
+192.168.10.1      0   FULL/  -        00:00:39    10.0.0.1        Serial3/0
+Router#show ip ospf interface
+
+FastEthernet0/0 is up, line protocol is up
+  Internet address is 192.168.20.1/24, Area 0
+  Process ID 2, Router ID 192.168.20.1, Network Type BROADCAST, Cost: 1
+  Transmit Delay is 1 sec, State DR, Priority 1
+  Designated Router (ID) 192.168.20.1, Interface address 192.168.20.1
+  No backup designated router on this network
+  Timer intervals configured, Hello 10, Dead 40, Wait 40, Retransmit 5
+    Hello due in 00:00:05
+  Index 1/1, flood queue length 0
+  Next 0x0(0)/0x0(0)
+  Last flood scan length is 1, maximum is 1
+  Last flood scan time is 0 msec, maximum is 0 msec
+  Neighbor Count is 0, Adjacent neighbor count is 0
+  Suppress hello for 0 neighbor(s)
+Serial2/0 is up, line protocol is up
+  Internet address is 10.0.3.1/24, Area 0
+  Process ID 2, Router ID 192.168.20.1, Network Type POINT-TO-POINT, Cost: 64
+  Transmit Delay is 1 sec, State POINT-TO-POINT,
+  Timer intervals configured, Hello 10, Dead 40, Wait 40, Retransmit 5
+    Hello due in 00:00:04
+  Index 2/2, flood queue length 0
+ --More-- 

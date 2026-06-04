@@ -1,0 +1,55 @@
+Switch#show running-config
+Building configuration...
+
+Current configuration : 499 bytes
+!
+version 12.1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname Switch
+!
+!
+!
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
+interface FastEthernet0/1
+!
+interface FastEthernet1/1
+
+Switch#show interfaces status
+Port      Name               Status       Vlan       Duplex  Speed Type
+Fa0/1                        connected    1          auto    auto  10/100BaseTX
+Fa1/1                        connected    1          auto    auto  10/100BaseTX
+Fa2/1                        connected    1          auto    auto  10/100BaseTX
+Fa3/1                        notconnect   1          auto    auto  10/100BaseTX
+Fa4/1                        notconnect   1          auto    auto  10/100BaseTX
+Fa5/1                        notconnect   1          auto    auto  10/100BaseTX
+
+Switch#show spanning-tree
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    32769
+             Address     0001.C776.BDD2
+             Cost        19
+             Port        2(FastEthernet1/1)
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     00D0.97E8.AB37
+             Hello Time  2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  20
+
+Interface        Role Sts Cost      Prio.Nbr Type
+---------------- ---- --- --------- -------- --------------------------------
+Fa1/1            Root FWD 19        128.2    P2p
+Fa2/1            Desg FWD 19        128.3    P2p
+Fa0/1            Desg FWD 19        128.1    P2p
+
+Switch#
+Switch#
